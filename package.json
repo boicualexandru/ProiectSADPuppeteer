@@ -1,0 +1,24 @@
+{
+  "name": "proiectsadpuppeteer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "example.js",
+  "dependencies": {
+    "lodash": "^4.17.11",
+    "puppeteer": "^1.12.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/boicualexandru/ProiectSADPuppeteer.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/boicualexandru/ProiectSADPuppeteer/issues"
+  },
+  "homepage": "https://github.com/boicualexandru/ProiectSADPuppeteer#readme"
+}
