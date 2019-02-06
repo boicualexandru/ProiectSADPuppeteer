@@ -30,8 +30,11 @@ async function timeout(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-var getOfferLinks = async (page, link) => {
-    await page.goto(link);
+var getOfferLinks = async (browser, link) => {
+    const page = await browser.newPage();
+    await page.goto(link, {
+        timeout: 3000000
+    });
 
     const offers = await page.$$('#gallerywide article a.offer-title__link');
 
@@ -46,6 +49,8 @@ var getOfferLinks = async (page, link) => {
     await Promise.all(hrefAttributeValuePromises).then(values => {
         links = values;
     });
+
+    await page.close();
 
     return links;
 }
@@ -111,7 +116,7 @@ var getInnerHtml = async (page, element) => {
 
 (async () => {
     const browser = await puppeteer.launch();
-    const page = await browser.newPage();
+    //const page = await browser.newPage();
 
     var stringToFile = '';
 
@@ -120,7 +125,7 @@ var getInnerHtml = async (page, element) => {
         'https://www.autovit.ro/autoturisme/?search%5Bcountry%5D=&view=galleryWide&page=' + index
     );
 
-    var offerLinksPromises = galleryLinks.map(link => getOfferLinks(page, link));
+    var offerLinksPromises = galleryLinks.map(link => getOfferLinks(browser, link));
     var allLinks = await Promise.all(offerLinksPromises).then(linksNested => _.flatten(linksNested));
     
     var offerParamsPromises = [];
