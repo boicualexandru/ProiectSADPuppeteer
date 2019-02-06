@@ -2,33 +2,29 @@ const puppeteer = require('puppeteer');
 const _ = require('lodash');
 const fs = require('fs');
 
-var offerParamsLabels = [
-    'Oferit de',
-    'Categorie',
-    'Marca',
-    'Model',
-    'Versiune',
-    'Anul fabricatiei',
-    'Km',
-    'Capacitate cilindrica',
-    'Combustibil',
-    'Putere',
-    'Cutie de viteze',
-    'Norma de poluare',
-    'Caroserie',
-    'Numar de portiere',
-    'Culoare',
-    'Vopsea metalizata',
-    'Tara de origine',
-    'Primul proprietar',
-    'Fara accident in istoric',
-    'Carte de service',
-    'Stare'
-];
-
-async function timeout(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
+// var offerParamsLabels = [
+//     'Oferit de',
+//     'Categorie',
+//     'Marca',
+//     'Model',
+//     'Versiune',
+//     'Anul fabricatiei',
+//     'Km',
+//     'Capacitate cilindrica',
+//     'Combustibil',
+//     'Putere',
+//     'Cutie de viteze',
+//     'Norma de poluare',
+//     'Caroserie',
+//     'Numar de portiere',
+//     'Culoare',
+//     'Vopsea metalizata',
+//     'Tara de origine',
+//     'Primul proprietar',
+//     'Fara accident in istoric',
+//     'Carte de service',
+//     'Stare'
+// ];
 
 var getOfferLinks = async (browser, link) => {
     const page = await browser.newPage();
@@ -81,14 +77,13 @@ var getOfferParamByElement = async (page, element) => {
 }
 
 
-var getOfferParams = async (browser, link) => {
+var getOfferDetails = async (browser, link) => {
+    // open the offer page
     const page = await browser.newPage();
     await page.goto(link, {
         timeout: 3000000
     });
-    //await timeout(4000);
 
-    //page.once('load'
     var offerParamsModel = {};
     var offerParamsPromises = [];
     const offerParams = await page.$$('li.offer-params__item');
@@ -115,34 +110,30 @@ var getInnerHtml = async (page, element) => {
 }
 
 (async () => {
+    // open browser
     const browser = await puppeteer.launch();
-    //const page = await browser.newPage();
 
-    var stringToFile = '';
-
+    // number of offers pages (gallery pages)
     const noOfPages = 2;
+
+    // links of the gallery pages
     var galleryLinks = _.range(1, noOfPages + 1).map(index => 
         'https://www.autovit.ro/autoturisme/?search%5Bcountry%5D=&view=galleryWide&page=' + index
     );
 
+    // links of all the offers
     var offerLinksPromises = galleryLinks.map(link => getOfferLinks(browser, link));
-    var allLinks = await Promise.all(offerLinksPromises).then(linksNested => _.flatten(linksNested));
+    var allOffersLinks = await Promise.all(offerLinksPromises).then(linksNested => _.flatten(linksNested));
     
-    var offerParamsPromises = [];
-    for (index = 0; index < allLinks.length; index++) {
-        var link = allLinks[index];
-        console.log(link);
-        offerParamsPromises.push(getOfferParams(browser, link));
-    }
-
-    await Promise.all(offerParamsPromises).then(values => {
-        stringToFile = values;
+    // get details for every offer
+    var offersDetailsPromises = allOffersLinks.map(offerLink => getOfferDetails(browser, offerLink));
+    var offersDetails;
+    await Promise.all(offersDetailsPromises).then(values => {
+        offersDetails = values;
     });
      
 
-    await saveToFile(JSON.stringify(stringToFile));
-
-    console.log();
+    await saveToFile(JSON.stringify(offersDetails));
 
     await browser.close();
 })();
