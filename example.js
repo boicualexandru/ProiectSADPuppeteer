@@ -26,6 +26,10 @@ var offerParamsLabels = [
     'Stare'
 ];
 
+async function timeout(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 var getOfferLinks = async (page, link) => {
     await page.goto(link);
 
@@ -56,25 +60,42 @@ var saveToFile = async (content) => {
     }); 
 }
 
-var getOfferParams = async (page, link) => {
+var getOfferParamByElement = async (page, element) => {
+    var paramLabel = await element.$('.offer-params__label');
+    var paramValueLink = await element.$('.offer-params__value .offer-params__link');
+    var paramValue = await element.$('.offer-params__value');
+
+    var paramLabelValue = await getInnerHtml(page, paramLabel);
+    var paramValueLinkValue = paramValueLink == null ? null : await getInnerHtml(page, paramValueLink);
+    var paramValueValue = paramValueLinkValue != null ? paramValueLinkValue : await getInnerHtml(page, paramValue);
+
+    var result = {};
+    result[paramLabelValue] = paramValueValue.trim();
+
+    return result;
+}
+
+
+var getOfferParams = async (browser, link) => {
+    const page = await browser.newPage();
     await page.goto(link);
+    //await timeout(4000);
 
     //page.once('load'
     var offerParamsModel = {};
+    var offerParamsPromises = [];
     const offerParams = await page.$$('li.offer-params__item');
 
-    console.log(link);
     for (index = 0; index < offerParams.length; index++) {
         var param = offerParams[index];
-        var paramLabel = await param.$('.offer-params__label');
-        var paramValueLink = await param.$('.offer-params__value .offer-params__link');
-        var paramValue = await param.$('.offer-params__value');
-
-        var paramLabelValue = await getInnerHtml(page, paramLabel);
-        var paramValueLinkValue = paramValueLink == null ? null : await getInnerHtml(page, paramValueLink);
-        var paramValueValue = paramValueLinkValue != null ? paramValueLinkValue : await getInnerHtml(page, paramValue);
-        offerParamsModel[paramLabelValue] = paramValueValue.trim();
+        var offerParamPromise = getOfferParamByElement(page, param);
+        offerParamsPromises.push(offerParamPromise);
     }
+
+    await Promise.all(offerParamsPromises).then(offerParamsList => {
+        offerParamsModel = _.assign(offerParamsModel, ...offerParamsList)
+    });
+
     return offerParamsModel;
 }
 
@@ -102,7 +123,7 @@ var getInnerHtml = async (page, element) => {
     for (index = 0; index < allLinks.length; index++) {
         var link = allLinks[index];
         console.log(link);
-        offerParamsPromises.push(getOfferParams(page, link));
+        offerParamsPromises.push(getOfferParams(browser, link));
     }
 
     await Promise.all(offerParamsPromises).then(values => {
