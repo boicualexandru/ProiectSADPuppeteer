@@ -78,7 +78,9 @@ var getOfferParamByElement = async (page, element) => {
 
 var getOfferParams = async (browser, link) => {
     const page = await browser.newPage();
-    await page.goto(link);
+    await page.goto(link, {
+        timeout: 3000000
+    });
     //await timeout(4000);
 
     //page.once('load'
@@ -96,6 +98,8 @@ var getOfferParams = async (browser, link) => {
         offerParamsModel = _.assign(offerParamsModel, ...offerParamsList)
     });
 
+    await page.close();
+
     return offerParamsModel;
 }
 
@@ -111,7 +115,7 @@ var getInnerHtml = async (page, element) => {
 
     var stringToFile = '';
 
-    const noOfPages = 1;
+    const noOfPages = 2;
     var galleryLinks = _.range(1, noOfPages + 1).map(index => 
         'https://www.autovit.ro/autoturisme/?search%5Bcountry%5D=&view=galleryWide&page=' + index
     );
