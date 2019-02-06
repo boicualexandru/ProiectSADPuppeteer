@@ -51,7 +51,7 @@ var getOfferLinks = async (page, link) => {
 }
 
 var saveToFile = async (content) => {
-    return fs.writeFile("D:/Master/Git/ProiectSADPuppeteer/download.csv", content, function(err) {
+    return fs.writeFile("D:/Master/Git/ProiectSADPuppeteer/download.json", content, function(err) {
         if(err) {
             console.log(err);
             return;
