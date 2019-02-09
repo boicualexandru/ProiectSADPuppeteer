@@ -1,6 +1,7 @@
 const puppeteer = require('puppeteer');
 const _ = require('lodash');
 const fs = require('fs');
+const insertScripts = require('./insertScripts.js');
 
 // var offerParamsLabels = [
 //     'Oferit de',
@@ -26,7 +27,64 @@ const fs = require('fs');
 //     'Stare'
 // ];
 
-var globalFeatures = [];
+var progress = 0;
+var totalRequestsCount = 0;
+
+var globalFeatures = ["ABS",
+"Computer de bord",
+"Inchidere centralizata",
+"Acoperis panoramic",
+"Airbag genunchi sofer",
+"Bare longitudinale acoperis",
+"Faruri automate",
+"Jante din aliaj usor",
+"Navigatie GPS",
+"Oglinzi retrovizoare exterioare electrocromatice",
+"Pilot automat",
+"Senzori parcare fata-spate",
+"Trapa",
+"Airbag-uri frontale",
+"Controlul stabilitatii (ESP)",
+"Radio",
+"Aer conditionat",
+"Airbag-uri cortina",
+"Controlul tractiunii (ASR)",
+"Faruri Xenon",
+"Limitator de viteza",
+"Oglinda retrovizoare interioara electrocromatica",
+"Oglinzi retrovizoare incalzite",
+"Proiectoare ceata",
+"Senzori parcare spate",
+"Airbag-uri laterale fata",
+"Geamuri fata electrice",
+"Servodirectie",
+"Aer conditionat doua zone",
+"Airbag-uri laterale spate",
+"DVD",
+"Head-up display",
+"Lumini de zi (LED)",
+"Oglinzi retrovizoare ajustabile electric",
+"Parbriz incalzit",
+"Scaune fata incalzite",
+"Stergatoare parbriz automate",
+"Carlig remorca",
+"Incalzire auxiliara",
+"Bluetooth",
+"Comenzi volan",
+"CD",
+"Camera parcare spate",
+"Geamuri laterale spate fumurii",
+"Alarma",
+"Geamuri cu tenta",
+"Imobilizator electronic",
+"Interior din velur",
+"Geamuri spate electrice",
+"Intrare auxiliara",
+"Suspensie reglabila",
+"Aer conditionat patru zone",
+"Scaune spate incalzite",
+"Interior din piele",
+"TV"];
 
 var getOfferLinks = async (browser, link) => {
     const page = await browser.newPage();
@@ -50,17 +108,18 @@ var getOfferLinks = async (browser, link) => {
 
     await page.close();
 
+    console.log('Got links from gallery page.')
     return links;
 }
 
 var saveToFile = async (content) => {
-    return fs.writeFile("C:/Work/Master/ProiectSADPuppeteer/download.json", content, function(err) {
-        if(err) {
+    return fs.writeFile("C:/Work/Master/ProiectSADPuppeteer/download.json", content, function (err) {
+        if (err) {
             console.log(err);
             return;
         }
         console.log("The file was saved!");
-    }); 
+    });
 }
 
 var getOfferParamByElement = async (page, element) => {
@@ -119,11 +178,14 @@ var getOfferDetails = async (browser, link) => {
     const offerFeaturesPromises = offerFeaturesElements.map(featureElement => getFeatureByElement(page, featureElement));
 
     await Promise.all(offerFeaturesPromises).then(features => {
-        offerParamsModel.features =  features;
+        offerParamsModel.features = features;
     });
 
 
     await page.close();
+
+    progress++;
+    console.log('Progress: ' + Math.floor((progress / totalRequestsCount) * 100) + '%');
 
     return offerParamsModel;
 }
@@ -140,14 +202,15 @@ var getInnerText = async (page, element) => {
     );
 }
 
+var firstofferId = 961;
+
 var getOfferWithIds = (offer, index) => {
-    offer.id = index + 1;
+    offer.id = index + firstofferId;
 
     featuresIds = offer.features.map(feature => {
         featureIndex = globalFeatures.indexOf(feature);
-        if(featureIndex < 0) {
-            featureIndex = globalFeatures.length;
-            globalFeatures.push(feature);
+        if (featureIndex < 0) {
+            console.log('Feature ' + feature + ' NOT FOUND ------------------');
         }
 
         //id
@@ -160,11 +223,20 @@ var getOfferWithIds = (offer, index) => {
 }
 
 var getOfferWithParsedFields = (offer) => {
-    offer['Anul fabricatiei'] = parseInt(offer['Anul fabricatiei']);
-    offer['Km'] = parseInt(offer['Km'].replace(/[^0-9]/g,''));
-    offer['Capacitate cilindrica'] = parseInt(offer['Capacitate cilindrica'].replace(/\s+/g, ''));
-    offer['Putere'] = parseInt(offer['Putere'].replace(/[^0-9]/g,''));
-    offer['Numar de portiere'] = parseInt(offer['Numar de portiere']);
+    if (offer['Anul fabricatiei'] != null)
+        offer['Anul fabricatiei'] = parseInt(offer['Anul fabricatiei']);
+
+    if (offer['Km'] != null)
+        offer['Km'] = parseInt(offer['Km'].replace(/[^0-9]/g, ''));
+
+    if (offer['Capacitate cilindrica'] != null)
+        offer['Capacitate cilindrica'] = parseInt(offer['Capacitate cilindrica'].replace(/\s+/g, ''));
+
+    if (offer['Putere'] != null)
+        offer['Putere'] = parseInt(offer['Putere'].replace(/[^0-9]/g, ''));
+
+    if (offer['Numar de portiere'] != null)
+        offer['Numar de portiere'] = parseInt(offer['Numar de portiere']);
 
     return offer;
 }
@@ -174,29 +246,42 @@ var getOfferWithParsedFields = (offer) => {
     const browser = await puppeteer.launch();
 
     // number of offers pages (gallery pages)
-    const noOfPages = 1;
+    const noOfPages = 50;
 
     // links of the gallery pages
-    var galleryLinks = _.range(1, noOfPages + 1).map(index => 
-        'https://www.autovit.ro/autoturisme/?search%5Bcountry%5D=&view=galleryWide&page=' + index
+    var galleryLinks = _.range(33, noOfPages + 33).map(index =>
+        'https://www.autovit.ro/autoturisme/?search%5Border%5D=created_at_first%3Adesc&search%5Bcountry%5D=&view=galleryWide&page=' + index
     );
 
     // links of all the offers
     var offerLinksPromises = galleryLinks.map(link => getOfferLinks(browser, link));
     var allOffersLinks = await Promise.all(offerLinksPromises).then(linksNested => _.flatten(linksNested));
-    
+    totalRequestsCount = allOffersLinks.length;
+
     // get details for every offer
-    var offersDetailsPromises = allOffersLinks.map(offerLink => getOfferDetails(browser, offerLink));
-    var offersDetails;
-    await Promise.all(offersDetailsPromises).then(values => {
-        offersDetails = values;
-    });
+    // var offersDetailsPromises = allOffersLinks.map(offerLink => getOfferDetails(browser, offerLink));
+    var offersDetails = [];
+
+
+
+    maxParallelRequests = 12;
+    for (let i = 0; i < allOffersLinks.length; i += maxParallelRequests) {
+        var lastIndexOfSlice = Math.min((i + maxParallelRequests), allOffersLinks.length)
+        await Promise.all(allOffersLinks
+            .slice(i, lastIndexOfSlice)
+            .map(offerLink => getOfferDetails(browser, offerLink))).then(values => {
+                offersDetails = offersDetails.concat(values);
+            });
+    }
 
     offersDetails = offersDetails.map(getOfferWithIds);
     offersDetails = offersDetails.map(getOfferWithParsedFields);
-     
 
-    await saveToFile(JSON.stringify(offersDetails));
+    var featuresInsertScripts = insertScripts.getFeatures(globalFeatures);
+    var recordsInserScripts = insertScripts.getRecords(offersDetails);
+    var recordsfeaturesInsertScripts = insertScripts.getRecordsFeatures(offersDetails);
+
+    await saveToFile(JSON.stringify(offersDetails) + '\n\n\n' + featuresInsertScripts + '\n\n\n' + recordsInserScripts + '\n\n\n' + recordsfeaturesInsertScripts);
 
     await browser.close();
 })();
