@@ -26,6 +26,8 @@ const fs = require('fs');
 //     'Stare'
 // ];
 
+var globalFeatures = [];
+
 var getOfferLinks = async (browser, link) => {
     const page = await browser.newPage();
     await page.goto(link, {
@@ -138,6 +140,35 @@ var getInnerText = async (page, element) => {
     );
 }
 
+var getOfferWithIds = (offer, index) => {
+    offer.id = index + 1;
+
+    featuresIds = offer.features.map(feature => {
+        featureIndex = globalFeatures.indexOf(feature);
+        if(featureIndex < 0) {
+            featureIndex = globalFeatures.length;
+            globalFeatures.push(feature);
+        }
+
+        //id
+        return featureIndex + 1;
+    });
+
+    offer.featuresIds = featuresIds;
+
+    return offer;
+}
+
+var getOfferWithParsedFields = (offer) => {
+    offer['Anul fabricatiei'] = parseInt(offer['Anul fabricatiei']);
+    offer['Km'] = parseInt(offer['Km'].replace(/[^0-9]/g,''));
+    offer['Capacitate cilindrica'] = parseInt(offer['Capacitate cilindrica'].replace(/\s+/g, ''));
+    offer['Putere'] = parseInt(offer['Putere'].replace(/[^0-9]/g,''));
+    offer['Numar de portiere'] = parseInt(offer['Numar de portiere']);
+
+    return offer;
+}
+
 (async () => {
     // open browser
     const browser = await puppeteer.launch();
@@ -160,6 +191,9 @@ var getInnerText = async (page, element) => {
     await Promise.all(offersDetailsPromises).then(values => {
         offersDetails = values;
     });
+
+    offersDetails = offersDetails.map(getOfferWithIds);
+    offersDetails = offersDetails.map(getOfferWithParsedFields);
      
 
     await saveToFile(JSON.stringify(offersDetails));
