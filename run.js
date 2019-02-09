@@ -76,6 +76,10 @@ var getOfferParamByElement = async (page, element) => {
     return result;
 }
 
+var getFeatureByElement = async (page, element) => {
+    return await getInnerText(page, element)
+}
+
 
 var getOfferDetails = async (browser, link) => {
     // open the offer page
@@ -107,9 +111,14 @@ var getOfferDetails = async (browser, link) => {
     );
     const offerPrice = parseInt(offerPriceString.replace(/\s+/g, ''));
     offerParamsModel.price = offerPrice;
+
     // features
+    const offerFeaturesElements = await page.$$('.offer-features__list>li.offer-features__item');
+    const offerFeaturesPromises = offerFeaturesElements.map(featureElement => getFeatureByElement(page, featureElement));
 
-
+    await Promise.all(offerFeaturesPromises).then(features => {
+        offerParamsModel.features =  features;
+    });
 
 
     await page.close();
@@ -120,6 +129,12 @@ var getOfferDetails = async (browser, link) => {
 var getInnerHtml = async (page, element) => {
     return await page.evaluate(
         el => el.innerHTML, element
+    );
+}
+
+var getInnerText = async (page, element) => {
+    return await page.evaluate(
+        el => el.innerText, element
     );
 }
 
