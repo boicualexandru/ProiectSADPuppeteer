@@ -52,7 +52,7 @@ var getOfferLinks = async (browser, link) => {
 }
 
 var saveToFile = async (content) => {
-    return fs.writeFile("D:/Master/Git/ProiectSADPuppeteer/download.json", content, function(err) {
+    return fs.writeFile("C:/Work/Master/ProiectSADPuppeteer/download.json", content, function(err) {
         if(err) {
             console.log(err);
             return;
@@ -84,6 +84,7 @@ var getOfferDetails = async (browser, link) => {
         timeout: 3000000
     });
 
+    // params
     var offerParamsModel = {};
     var offerParamsPromises = [];
     const offerParams = await page.$$('li.offer-params__item');
@@ -97,6 +98,19 @@ var getOfferDetails = async (browser, link) => {
     await Promise.all(offerParamsPromises).then(offerParamsList => {
         offerParamsModel = _.assign(offerParamsModel, ...offerParamsList)
     });
+
+
+    // price
+    const offerPriceElement = await page.$('.offer-price');
+    const offerPriceString = await page.evaluate(
+        el => el.getAttribute('data-price'), offerPriceElement
+    );
+    const offerPrice = parseInt(offerPriceString.replace(/\s+/g, ''));
+    offerParamsModel.price = offerPrice;
+    // features
+
+
+
 
     await page.close();
 
@@ -114,7 +128,7 @@ var getInnerHtml = async (page, element) => {
     const browser = await puppeteer.launch();
 
     // number of offers pages (gallery pages)
-    const noOfPages = 2;
+    const noOfPages = 1;
 
     // links of the gallery pages
     var galleryLinks = _.range(1, noOfPages + 1).map(index => 
